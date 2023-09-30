@@ -128,21 +128,29 @@ def main_loop():
 
 @app.route("/validate_address", methods=['GET', 'POST'])
 def validate_address():
+    app.logger.info("Validating address")
     address = session["gathered_info"]["lokalizacja"]
-    text = request.values.get('SpeechResult', "")
 
-    if "tak" in text.lower():
-        session["address_confirmed"] = True
-        resp = _tts("Świetnie, lokalizacja została potwierdzona.")
-        resp.queue('main_loop')
+    try:
+        text = request.values["SpeechResult"]
+
+        if "tak" in text.lower():
+            session["address_confirmed"] = True
+            resp = _tts("Świetnie, lokalizacja została potwierdzona.")
+            resp.queue('main_loop')
+            return str(resp)
+        else:
+            resp = _tts('')
+            del session["gathered_info"]["lokalizacja"]
+            resp.gather(action='main_loop', language="pl-PL", speech_model="experimental_utterances", input="speech", speech_timeout="auto")
+            return str(resp)
+    except KeyError:
+        url = f"https://maps.googleapis.com/maps/api/geocode/json?address={address}&key=" + os.environ["GOOGLE_KEY"]
+        response = requests.get(url)
+
+        formatted = response.json()['results'][0]['formatted_address']
+
+        resp = _tts(f"Czy to jest poprawny adres: {formatted}?")
+        resp.gather(action='validate_address', language="pl-PL", speech_model="experimental_utterances", input="speech", speech_timeout="auto")
+
         return str(resp)
-    
-    url = f"https://maps.googleapis.com/maps/api/geocode/json?address={address}&key=" + os.environ["GOOGLE_KEY"]
-    response = requests.get(url)
-
-    formatted = response.json()['results'][0]['formatted_address']
-
-    resp = _tts(f"Czy to jest poprawny adres: {formatted}?")
-    resp.gather(action='validate_address', language="pl-PL", speech_model="experimental_utterances", input="speech", speech_timeout="auto")
-
-    return str(resp)
