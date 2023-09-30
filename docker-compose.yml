@@ -1,0 +1,48 @@
+version: "3.3"
+services:
+  real_chatter:
+    build: ./
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src:/app/
+      - ./output:/app/output
+    command: gunicorn -b '0.0.0.0:8000' -w 4 'main:app'
+    env_file:
+      - .env
+    container_name: real_chatter
+    restart: always
+    networks:
+      - common
+
+  celery_worker:
+    build: ./
+    volumes:
+      - ./src:/app/
+      - ./output:/app/output
+    command: celery -A 'celery_tasks.celery' worker
+    env_file:
+      - .env
+    networks:
+      - common
+
+  redis:
+    image: redis:latest
+    container_name: redis_chatter
+    restart: always
+    networks:
+      - common
+
+  postgres:
+    image: postgres:15.1
+    container_name: postgres_chatter
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+    networks:
+      - common
+
+networks:
+  common:
