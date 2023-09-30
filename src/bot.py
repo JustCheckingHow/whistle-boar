@@ -8,6 +8,7 @@ from telegram import Update
 from telegram.ext import (Application, CommandHandler, CallbackContext,
                           MessageHandler)
 from telegram.ext.filters import LOCATION, PHOTO, TEXT
+from bot_state import BotState, AnimalUpdate
 
 load_dotenv()
 
@@ -20,18 +21,21 @@ SERVER_API_ADDRS = os.environ['SERVER_API_ADDRS']
 builder = Application.builder()
 builder.token(os.environ['TOKEN']).build()
 application = builder.build()
-counter = 1
+
+bot_state = BotState()
+animal_update = AnimalUpdate()
 
 
-def form_api_request(location, animal_type, behaviour, image):
+def form_api_request():
     response = requests.post(SERVER_API_ADDRS + '/submit',
                              data={
                                  "location": "user_location",
-                                 "location_lat": location[0],
-                                 "location_lon": location[1],
-                                 "animal_type": animal_type,
-                                 "behaviour": behaviour,
+                                 "location_lat": animal_update.location_lat,
+                                 "location_lon": animal_update.location_lon,
+                                 "animal_type": animal_update.animal_type,
+                                 "behaviour": animal_update.behaviour,
                              })
+    animal_update.reset()
     return response
 
 
@@ -45,15 +49,12 @@ def escape_markdown(text):
 
 
 async def start_callback(update: Update, context: CallbackContext):
-
-    mkd_start = """
-    *Witaj w lokalizatorze fauny* \n
-    Co zobaczyłeś/zobaczyłaś dzisiaj na szlaku? \n
-    Mozesz podać lokalizację oraz załadować zdjęcia. \n
-    """
-    mkd_start = escape_markdown(mkd_start)
+    animal_update.reset()
+    bot_state.reset()
+    msg = bot_state.next_state()
+    bot_state.INFO_SHARED = True
     await context.bot.send_message(chat_id=update.effective_chat.id,
-                                   text=mkd_start,
+                                   text=escape_markdown(msg),
                                    parse_mode='MarkdownV2')
 
 
@@ -61,26 +62,56 @@ async def text_callback(update: Update, context: CallbackContext):
     print(f"Otrzymano tekst: {update.message.text}")
     user_says = update.message.text
     if user_says:
-        await update.message.reply_text(escape_markdown(r"Dodatkowe info?"),
+        if bot_state.STATE == "TYPE":
+            animal_update.animal_type = user_says
+            bot_state.TYPE_RECEIVED = True
+        elif bot_state.STATE == "BEHAVIOUR":
+            animal_update.behaviour = user_says
+            bot_state.BEHAVIOUR_RECEIVED = True
+        elif bot_state.STATE == "LOCATION":
+            if 'nie' in user_says:
+                animal_update.location_lat = ""
+                animal_update.location_lon = ""
+            bot_state.LOCATION_RECEIVED = True
+        elif bot_state.STATE == "PHOTO":
+            if 'nie' in user_says:
+                animal_update.image = ""
+            bot_state.PHOTO_RECEIVED = True
+        if animal_update.is_done():
+            form_api_request()
+        msg = bot_state.next_state()
+        await update.message.reply_text(escape_markdown(msg),
                                         parse_mode='MarkdownV2')
         return
     await update.message.reply_text("Else")
 
 
 async def location_handler(update: Update, context: CallbackContext):
+    print()
     print(f"Otrzymano lokalizację: {update.message.location}")
-    await context.bot.sendMessage(
-        chat_id=update.message.chat.id,
-        text=escape_markdown("Dzięki za lokalizację, a zdjęcia?"),
-        parse_mode='MarkdownV2')
+    print()
+    bot_state.LOCATION_RECEIVED = True
+    lat = update.message.location.latitude
+    lon = update.message.location.longitude
+    animal_update.location_lat = lat
+    animal_update.location_lon = lon
+    msg = bot_state.next_state()
+    if animal_update.is_done():
+        form_api_request()
+    await context.bot.sendMessage(chat_id=update.message.chat.id,
+                                  text=escape_markdown(msg),
+                                  parse_mode='MarkdownV2')
 
 
 async def photo_handler(update: Update, context: CallbackContext):
     print("Otrzymano zdjęcie!")
-    await context.bot.sendMessage(
-        chat_id=update.message.chat.id,
-        text=escape_markdown("Moim zdaniem to jest bardzo fajny dzik!"),
-        parse_mode='MarkdownV2')
+    bot_state.PHOTO_RECEIVED = True
+    if animal_update.is_done():
+        form_api_request()
+    msg = bot_state.next_state()
+    await context.bot.sendMessage(chat_id=update.message.chat.id,
+                                  text=escape_markdown(msg),
+                                  parse_mode='MarkdownV2')
 
 
 # this is the function that will be called when the user sends a location
