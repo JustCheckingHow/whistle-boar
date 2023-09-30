@@ -48,7 +48,7 @@
   height: 50px;
   opacity: 30%;
   border-radius: 50%;
-  border: '5px solid';
+  border: '5px solid black';
   cursor: pointer;
   transform: translate(-50%, -50%);
 }
