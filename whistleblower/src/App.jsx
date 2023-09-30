@@ -1,42 +1,100 @@
 import './App.css'
 import React, { useRef, useEffect, useState } from 'react'
-import mapboxgl from 'mapbox-gl';
-mapboxgl.accessToken = 'pk.eyJ1Ijoid3d5ZG1hbnNraSIsImEiOiJjazlrOXBucHQwZjhvM2dwOGhldnRpdnU1In0.JJ4N2_IsC1DlL-htctK27w';
+import GoogleMapReact from 'google-map-react';
+import stc from "string-to-color";
+
+const Marker = (props) => {
+  const [hovered, setHovered] = useState(false);
+  const color = stc(props.type);
+
+  const RADIUS_MAP = {
+    15: 50,
+    14: 40,
+    13: 30,
+    12: 20,
+    11: 10,
+    10: 5,
+  }
+
+  React.useEffect(() => {
+    setHovered(props['$hover']);
+  }, [props['$hover']]);
+
+  return <div
+    className="animal-marker"
+    style={{
+      backgroundColor: hovered ? 'red' : color,
+      borderColor: hovered ? 'red' : color,
+      width: `${RADIUS_MAP[props.zoom]}px`,
+      height: `${RADIUS_MAP[props.zoom]}px`,
+    }}
+  >
+  </div>
+}
 
 function App() {
-  const mapContainer = useRef(null);
-  const map = useRef(null);
-  const [lng, setLng] = useState(-70.9);
-  const [lat, setLat] = useState(42.35);
-  const [zoom, setZoom] = useState(9);
+  const lng = 19.95;
+  const lat = 50.05;
+  const initialZoom = 13;
+
+  const [zoom, setZoom] = useState(initialZoom);
+  const [data, setData] = useState([]);
+  const [markers, setMarkers] = useState([]);
+
+  const fetchData = async () => {
+    setData([]);
+    fetch(`${import.meta.env.VITE_ROOT_API}/data`)
+    .then(response => response.json())
+    .then(data => {
+      // add mapbox markers
+      data.forEach((marker) => {
+        setData((current) => [...current, marker]);
+      });
+    });
+  }
 
   useEffect(() => {
-    if (map.current) return; // initialize map only once
+    fetchData();
+  }, []);
 
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
-      center: [lng, lat],
-      zoom: zoom
-    });
+  useEffect(() => {
+    setMarkers(data.map((marker, index) => {
+      const key = `marker-${index}`;
 
-    map.current.on('move', () => {
-      setLng(map.current.getCenter().lng.toFixed(4));
-      setLat(map.current.getCenter().lat.toFixed(4));
-      setZoom(map.current.getZoom().toFixed(2));
-      });
+      const element = (
+        <Marker 
+          key={key} 
+          lng={marker.location_lon} 
+          lat={marker.location_lat} 
+          zoom={zoom} 
+          type={marker.animal_type}
+          />
+      );
 
-    map.on('load', function () {
-        map.resize();
-    });
-  }, [lat, lng, zoom]);
+      return element;
+      }));
+    }, [data, zoom]);
+
 
   return (
     <div style={{
       height: '100vh',
       width: '100vw',
     }}>
-      <div ref={mapContainer} className="map-container" />
+      <GoogleMapReact
+        bootstrapURLKeys={{ key: import.meta.env.VITE_GOOGLE_KEY }}
+        defaultCenter={{
+          lat: lat,
+          lng: lng
+        }}
+        defaultZoom={initialZoom}
+        onChange={(e) => {
+          setZoom(e.zoom);
+        }}
+        yesIWantToUseGoogleMapApiInternals
+      >
+        {markers}
+      </GoogleMapReact>
     </div>
   )
 }
