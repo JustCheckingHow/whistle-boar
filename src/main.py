@@ -108,8 +108,9 @@ def main_loop():
     text_response = response.split("|")[0].strip()
 
     if "lokalizacja" in gathered_info and not session["address_confirmed"]:
+        app.logger.info("Asking for address confirmation")
         resp = _tts('')
-        resp.queue('validate_address')
+        resp.enqueue(action='validate_address')
         return str(resp)
 
     if '<KONIEC>' in response:
@@ -137,11 +138,15 @@ def validate_address():
         if "tak" in text.lower():
             session["address_confirmed"] = True
             resp = _tts("Świetnie, lokalizacja została potwierdzona.")
-            resp.queue('main_loop')
+            resp.enqueue(action='main_loop')
             return str(resp)
         else:
-            resp = _tts('')
-            del session["gathered_info"]["lokalizacja"]
+            resp = _tts('Czy możesz podać poprawną lokalizację?')
+
+            gathered = session["gathered_info"]
+            del gathered["lokalizacja"]
+            session["gathered_info"] = gathered
+
             resp.gather(action='main_loop', language="pl-PL", speech_model="experimental_utterances", input="speech", speech_timeout="auto")
             return str(resp)
     except KeyError:
