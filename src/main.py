@@ -54,7 +54,7 @@ Przykład 5:
  - Asystent: Gdzie dokładnie był? | gatunek zwierzęcia: łoś
 
 Lokalizacja *musi* zawierać miasto i ulicę, a zachowanie musi być krótkim opisem tego, co robiło zwierzę. Jeżeli użytkownik nie był precyzyjny, możesz zapytać o to jeszcze raz.
-Użytkownik musi podać lokalizację tak, żeby dało się ją znaleźć na mapie google. Jeżeli podał tylko miasto, nie uzupełniaj pola "lokalizacja".
+Użytkownik musi podać lokalizację tak, żeby dało się ją znaleźć na mapie google. Jeżeli podał tylko miasto albo tylko ulicę, nie uzupełniaj pola "lokalizacja".
 """
 
 @app.route("/voice", methods=['GET', 'POST'])
@@ -109,7 +109,7 @@ def main_loop():
 
     if "lokalizacja" in gathered_info and not session["address_confirmed"]:
         resp = _tts('')
-        resp.enqueue('validate_address')
+        resp.queue('validate_address')
         return str(resp)
 
     if '<KONIEC>' in response:
@@ -134,7 +134,7 @@ def validate_address():
     if "tak" in text.lower():
         session["address_confirmed"] = True
         resp = _tts("Świetnie, lokalizacja została potwierdzona.")
-        resp.enqueue('main_loop')
+        resp.queue('main_loop')
         return str(resp)
     
     url = f"https://maps.googleapis.com/maps/api/geocode/json?address={address}&key=" + os.environ["GOOGLE_KEY"]
