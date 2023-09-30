@@ -27,6 +27,9 @@ class WildAnimalNotification(Base):
     def __repr__(self):
         return f"<WildAnimalNotification(id={self.id}, type={self.animal_type}>"
     
+    def to_dict(self):
+       return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+    
 # create postgresql engine
 engine = create_engine(f'postgresql://postgres:{os.environ["POSTGRES_PASSWORD"]}@postgres_chatter:5432/postgres')
 

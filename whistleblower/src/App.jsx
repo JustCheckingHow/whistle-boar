@@ -14,10 +14,10 @@ function App() {
     if (map.current) return; // initialize map only once
 
     map.current = new mapboxgl.Map({
-    container: mapContainer.current,
-    style: 'mapbox://styles/mapbox/streets-v12',
-    center: [lng, lat],
-    zoom: zoom
+      container: mapContainer.current,
+      style: 'mapbox://styles/mapbox/streets-v12',
+      center: [lng, lat],
+      zoom: zoom
     });
 
     map.current.on('move', () => {
@@ -25,12 +25,19 @@ function App() {
       setLat(map.current.getCenter().lat.toFixed(4));
       setZoom(map.current.getZoom().toFixed(2));
       });
+
+    map.on('load', function () {
+        map.resize();
+    });
   }, [lat, lng, zoom]);
 
   return (
-    <>
+    <div style={{
+      height: '100vh',
+      width: '100vw',
+    }}>
       <div ref={mapContainer} className="map-container" />
-    </>
+    </div>
   )
 }
 

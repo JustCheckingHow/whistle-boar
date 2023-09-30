@@ -1,5 +1,5 @@
 from app import app
-from flask import request, session
+from flask import request, session, jsonify
 from utils import _tts, openai_call
 import os
 import requests
@@ -254,3 +254,12 @@ def save_to_db(animal_type, location_str, location_lat, location_lon, behaviour)
         db_sess.add(notif)
         db_sess.commit()
         app.logger.info("Saved to db: %s", notif)
+
+
+@app.route("/data", methods=["GET"])
+def data():
+    with Session(engine) as db_sess:
+        notifs = db_sess.query(WildAnimalNotification).all()
+        notifs = [notif.to_dict() for notif in notifs]
+        return jsonify(notifs)
+    
