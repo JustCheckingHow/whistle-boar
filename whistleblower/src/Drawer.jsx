@@ -5,13 +5,14 @@ import Drawer from '@mui/material/Drawer';
 import CssBaseline from '@mui/material/CssBaseline';
 import MuiAppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
-import List from '@mui/material/List';
+import Autocomplete from '@mui/material/Autocomplete';
 import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import { TextField } from '@mui/material';
 
 import Slider from '@mui/material/Slider';
 
@@ -143,11 +144,24 @@ export default function PersistentDrawerLeft(props) {
 const Filters = () => {
   const filters = React.useContext(FilterContext);
 
-  console.log(filters);
+  const options = filters.uniqueAnimals;
 
   return (
     <div>
       <h1>Filters</h1>
+      <Autocomplete
+        id="filter-animals"
+        options={options}
+        sx={{ width: 300 }}
+        renderInput={(params) => <TextField {...params} label="Animals" />}
+        multiple
+        onChange={(event, value) => {
+          filters.setFilters({
+            ...filters.filter,
+            animals: value,
+          });
+        }}
+      />
     </div>
   );
 }
@@ -196,6 +210,7 @@ const StoryTimeBox = () => {
         width: '25%',
         backgroundColor: 'white',
         zIndex: 1000,
+        boxShadow: '0px 0px 10px 0px rgba(0,0,0,0.75)',
       }}
     >
       {filters.currentAnimal}

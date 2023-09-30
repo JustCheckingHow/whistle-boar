@@ -105,7 +105,8 @@ def main_loop():
         if i not in gathered_already
     ]
 
-    response = openai_call(session["conversation"], "gpt-4")
+    # response = openai_call(session["conversation"], "gpt-4")
+    response = openai_call(session["conversation"], "ft:gpt-3.5-turbo-0613:flathub::84En2q8s")
     session["conversation"].append({"role": "assistant", "content": response})
     app.logger.info("Response from data extraction: %s", response)
 

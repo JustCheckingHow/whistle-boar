@@ -7,7 +7,7 @@ services:
     volumes:
       - ./src:/app/
       - ./output:/app/output
-    command: gunicorn -b '0.0.0.0:8000' -w 4 'main:app'
+    command: gunicorn -b '0.0.0.0:8000' -w 4 'main:app' -t 180
     env_file:
       - .env
     container_name: real_chatter

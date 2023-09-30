@@ -88,9 +88,14 @@ function GoogleMapComponent() {
     }, {});
 
     filterContext.setUniqueAnimals(Object.keys(uniqueAnimals));
+    const allowedAnimals = filterContext.filters['animals'];
 
     setMarkers(data.map((marker, index) => {
       const key = `marker-${index}`;
+
+      if(allowedAnimals && allowedAnimals.length != 0 && !allowedAnimals.includes(marker.animal_type)) {
+        return null;
+      }
 
       const element = (
         <Marker
@@ -109,7 +114,7 @@ function GoogleMapComponent() {
 
       return element;
     }));
-  }, [data, zoom]);
+  }, [data, zoom, filterContext.filters['animals']]);
 
 
   return (
