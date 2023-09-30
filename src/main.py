@@ -1,8 +1,12 @@
 from app import app
-from flask import request, session
+from flask import request, session, jsonify
 from utils import _tts, openai_call
 import os
 import requests
+from models import engine, WildAnimalNotification
+from sqlalchemy.orm import Session
+import uuid
+import datetime
 
 GREETING = "Witaj w systemie GWIZD. Czy spotkało Cię jakieś dzikie zwierzę?"
 SYSTEM = """
@@ -25,6 +29,7 @@ Jeżeli uznasz że rozmowa została zakończona, dodaj do swojej odpowiedzi sło
 WAŻNE: Twoja wypowiedź powinna mieć format '<WYPOWIEDŹ> | <NOWOUZYSKANA INFORMACJA>:<INFORMACJA> | <NOWOUZYSKANA INFORMACJA 2>:<INFORMACJA 2> '. /<NIE> oznacza, czy użytkownik uzupełnił w swojej odpowiedzi jakąś z informacji których potrzebujesz. Jeżeli użytkownik nie podał żadnej informacji, nie uzupełniaj pola `NOWOUZYSKANA INFORMACJA`. 
 Nie rób podsumowania rozmowy, podaj tylko informację uzyskaną bezpośrednio w poprzedniej odpowiedzi.
 
+Zawsze używaj pełnej nazwy zwierzęcia, np 'niedźwiedź' zamiast 'miś', 'pies' zamist 'piesek' itp.
 
 Przykład 1:
  - System: Data that is still needed: ["gatunek zwierzęta", "lokalizacja", "zachowanie"]
@@ -53,23 +58,37 @@ Przykład 5:
  - Użytkownik: Spotkałem łosia
  - Asystent: Gdzie dokładnie był? | gatunek zwierzęcia: łoś
 
+Przykład 6:
+ - System: Data that is still needed: ["gatunek zwierzęta", "lokalizacja"]
+ - Użytkownik: Spotkałem misia
+ - Asystent: Gdzie dokładnie był? | gatunek zwierzęcia: niedźwiedź
+
 Lokalizacja *musi* zawierać miasto i ulicę, a zachowanie musi być krótkim opisem tego, co robiło zwierzę. Jeżeli użytkownik nie był precyzyjny, możesz zapytać o to jeszcze raz.
 Użytkownik musi podać lokalizację tak, żeby dało się ją znaleźć na mapie google. Jeżeli podał tylko miasto albo tylko ulicę, nie uzupełniaj pola "lokalizacja".
 """
 
+
 @app.route("/voice", methods=['GET', 'POST'])
 def voice():
     app.logger.info("Call from %s", request.values.get('From', ""))
-    session["conversation"] = [
-        {"role": "system", "content": SYSTEM},
-        {"role": "assistant", "content": GREETING}
-    ]
+    session["conversation"] = [{
+        "role": "system",
+        "content": SYSTEM
+    }, {
+        "role": "assistant",
+        "content": GREETING
+    }]
     session["gathered_info"] = {}
     session["address_confirmed"] = False
+    session["notification_confirmed"] = False
 
     resp = _tts(GREETING)
     # resp.say("You can answer in your own language", language="en-US", voice=f"Google.en-US-Wavenet-B")
-    resp.gather(action='main_loop', language="pl-PL", speech_model="experimental_utterances", input="speech", speech_timeout="auto")
+    resp.gather(action='main_loop',
+                language="pl-PL",
+                speech_model="experimental_utterances",
+                input="speech",
+                speech_timeout="auto")
 
     return str(resp)
 
@@ -81,7 +100,10 @@ def main_loop():
     gathered_info = session["gathered_info"]
 
     gathered_already = gathered_info.keys()
-    to_gather = [i for i in ["gatunek zwierzęta", "lokalizacja", "zachowanie"] if i not in gathered_already]
+    to_gather = [
+        i for i in ["gatunek zwierzęcia", "lokalizacja", "zachowanie"]
+        if i not in gathered_already
+    ]
 
     response = openai_call(session["conversation"], "gpt-4")
     session["conversation"].append({"role": "assistant", "content": response})
@@ -101,10 +123,23 @@ def main_loop():
     session["gathered_info"] = gathered_info
 
     gathered_already = gathered_info.keys()
-    to_gather = [i for i in ["gatunek zwierzęta", "lokalizacja", "zachowanie"] if i not in gathered_already]
+    to_gather = [
+        i for i in ["gatunek zwierzęcia", "lokalizacja", "zachowanie"]
+        if i not in gathered_already
+    ]
 
-    session["conversation"].append({"role": "system", "content": "Data gathered so far: " + str(gathered_info)})
-    session["conversation"].append({"role": "system", "content": "Data that is still needed: " + str(to_gather) + ". Please ask for it."})
+    session["conversation"].append({
+        "role":
+        "system",
+        "content":
+        "Data gathered so far: " + str(gathered_info)
+    })
+    session["conversation"].append({
+        "role":
+        "system",
+        "content":
+        "Data that is still needed: " + str(to_gather) + ". Please ask for it."
+    })
     text_response = response.split("|")[0].strip()
 
     if "lokalizacja" in gathered_info and not session["address_confirmed"]:
@@ -113,16 +148,27 @@ def main_loop():
         resp.enqueue(action='validate_address')
         return str(resp)
 
+    app.logger.info("to_gather: %s", to_gather)
+    if len(to_gather) == 0 and not session["notification_confirmed"]:
+        app.logger.info("Asking for submission confirmation")
+        resp = _tts('')
+        resp.enqueue(action='confirm_submission')
+        return str(resp)
+
     if '<KONIEC>' in response:
         app.logger.info("Conversation ended")
         resp = _tts(text_response)
         resp.hangup()
         return str(resp)
-    
+
     app.logger.info("Text response: %s", text_response)
 
     resp = _tts(text_response)
-    resp.gather(action='main_loop', language="pl-PL", speech_model="experimental_utterances", input="speech", speech_timeout="auto")
+    resp.gather(action='main_loop',
+                language="pl-PL",
+                speech_model="experimental_utterances",
+                input="speech",
+                speech_timeout="auto")
 
     return str(resp)
 
@@ -137,6 +183,11 @@ def validate_address():
 
         if "tak" in text.lower():
             session["address_confirmed"] = True
+
+            gathered_info = session["gathered_info"]
+            gathered_info["lokalizacja"] = session["address_proposition"]
+            session["gathered_info"] = gathered_info
+
             resp = _tts("Świetnie, lokalizacja została potwierdzona.")
             resp.enqueue(action='main_loop')
             return str(resp)
@@ -147,15 +198,131 @@ def validate_address():
             del gathered["lokalizacja"]
             session["gathered_info"] = gathered
 
-            resp.gather(action='main_loop', language="pl-PL", speech_model="experimental_utterances", input="speech", speech_timeout="auto")
+            resp.gather(action='main_loop',
+                        language="pl-PL",
+                        speech_model="experimental_utterances",
+                        input="speech",
+                        speech_timeout="auto")
             return str(resp)
     except KeyError:
-        url = f"https://maps.googleapis.com/maps/api/geocode/json?address={address}&key=" + os.environ["GOOGLE_KEY"]
+        url = f"https://maps.googleapis.com/maps/api/geocode/json?address={address}&key=" + os.environ[
+            "GOOGLE_KEY"]
         response = requests.get(url)
-
-        formatted = response.json()['results'][0]['formatted_address']
+        js = response.json()
+        formatted = js['results'][0]['formatted_address']
+        lon_lat = js['results'][0]['geometry']['location']
+        session["address_proposition"] = formatted
+        session["address_coords"] = lon_lat
 
         resp = _tts(f"Czy to jest poprawny adres: {formatted}?")
-        resp.gather(action='validate_address', language="pl-PL", speech_model="experimental_utterances", input="speech", speech_timeout="auto")
+        resp.gather(action='validate_address',
+                    language="pl-PL",
+                    speech_model="experimental_utterances",
+                    input="speech",
+                    speech_timeout="auto")
 
         return str(resp)
+
+
+@app.route("/confirm_submission", methods=["GET", "POST"])
+def confirm_submission():
+    app.logger.info("Confirming submission")
+    conversation = session["conversation"]
+
+    try:
+        text = request.values["SpeechResult"]
+
+        if "tak" in text.lower().split():
+            session["notification_confirmed"] = True
+            conversation.append({
+                "role":
+                "assistant",
+                "content":
+                "Zgłoszenie zostało potwierdzone. Czy masz jeszcze jakieś pytania?"
+            })
+            session["conversation"] = conversation
+
+            app.logger.info("Sending notification")
+            app.logger.info("Gathered info: %s", session["gathered_info"])
+
+            save_to_db(session["gathered_info"]["gatunek zwierzęcia"],
+                       session["gathered_info"]["lokalizacja"],
+                       session["address_coords"]["lat"],
+                       session["address_coords"]["lng"],
+                       session["gathered_info"]["zachowanie"])
+
+            resp = _tts(
+                "Świetnie, zgłoszenie zostało potwierdzone. Czy masz jeszcze jakieś pytania?"
+            )
+            resp.gather(action='main_loop',
+                        language="pl-PL",
+                        speech_model="experimental_utterances",
+                        input="speech",
+                        speech_timeout="auto")
+            return str(resp)
+        else:
+            conversation.append({
+                "role":
+                "assistant",
+                "content":
+                "Zgłoszenie nie zostało potwierdzone. Zacznijmy od nowa."
+            })
+            session["conversation"] = conversation
+
+            resp = _tts('Zacznijmy od nowa.')
+            session["gathered_info"] = {}
+
+            resp.enqueue(action='main_loop')
+            return str(resp)
+    except KeyError as e:
+        system = f"Użytkownik zgłosił, że trafił na dzikie zwierzę. Dane zgłoszenia: {session['gathered_info']} \n"
+
+        system += "\nPodsumuj zgłoszenie w naturalny sposób i zapytaj rozmówcę czy zgłoszenie jest poprawne. Pamiętaj, że rozmawiacie przez telefon, więc musisz być zwięzły."
+
+        tmp_convo = [{"role": "system", "content": system}]
+        response = openai_call(tmp_convo, "gpt-3.5-turbo", 0.5)
+        conversation.append({"role": "assistant", "content": response})
+        session["conversation"] = conversation
+
+        app.logger.info("Response from data extraction: %s", response)
+        resp = _tts(response)
+        resp.gather(action='confirm_submission',
+                    language="pl-PL",
+                    speech_model="experimental_utterances",
+                    input="speech",
+                    speech_timeout="auto")
+        return str(resp)
+
+
+@app.route("/submit", methods=["POST"])
+def submit_notification():
+    app.logger.info("Attempting to save to the DB")
+
+    save_to_db(request.form["animal_type"], request.form["location"],
+               request.form["location_lat"], request.form["location_lon"],
+               request.form["behaviour"])
+    return jsonify({"status": "added to the DB"})
+
+
+def save_to_db(animal_type, location_str, location_lat, location_lon,
+               behaviour):
+    uid = str(uuid.uuid4())
+    with Session(engine) as db_sess:
+        notif = WildAnimalNotification(id=uid,
+                                       animal_type=animal_type,
+                                       location=location_str,
+                                       location_lat=float(location_lat),
+                                       location_lon=float(location_lon),
+                                       behaviour=behaviour,
+                                       created_at=datetime.datetime.now())
+        db_sess.add(notif)
+        db_sess.commit()
+        app.logger.info("Saved to db: %s", notif)
+
+
+@app.route("/data", methods=["GET"])
+def data():
+    with Session(engine) as db_sess:
+        notifs = db_sess.query(WildAnimalNotification).all()
+        notifs = [notif.to_dict() for notif in notifs]
+        return jsonify(notifs)

@@ -8,12 +8,12 @@ def _tts(text):
     resp.say(text, language=lang, voice=f"Google.{lang}-Wavenet-B")
     return resp
 
-def openai_call(messages, model):
+def openai_call(messages, model, temperature=0.0):
     import openai
     openai.api_key = os.getenv("OPENAI_API_KEY")
     response = openai.ChatCompletion.create(
         model=model,
         messages=messages,
-        temperature=0.0
+        temperature=temperature
     ).choices[0]['message']['content']
     return response

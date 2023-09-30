@@ -11,10 +11,7 @@ def extract_next_action(xml):
     try:
         return re.search(r'action="(.+?)"', xml).group(1)
     except AttributeError:
-        try:
-            return re.search(r'<Enqueue>(.+?)</Enqueue>', xml).group(1)
-        except AttributeError:
-            print(xml)
+        print(xml)
 
 def extract_speech_result(xml):
     # the speech result is given in the form of `<Say (...)>...</Say>`
