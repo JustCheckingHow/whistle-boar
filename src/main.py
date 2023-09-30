@@ -1,12 +1,14 @@
-from app import app
-from flask import request, session, jsonify
-from utils import _tts, openai_call
-import os
-import requests
-from models import engine, WildAnimalNotification
-from sqlalchemy.orm import Session
-import uuid
 import datetime
+import os
+import uuid
+
+import requests
+from flask import jsonify, request, session
+from sqlalchemy.orm import Session
+
+from app import app
+from models import WildAnimalNotification, engine
+from utils import _tts, openai_call
 
 GREETING = "Witaj w systemie GWIZD. Czy spotkało Cię jakieś dzikie zwierzę?"
 SYSTEM = """
@@ -297,7 +299,7 @@ def confirm_submission():
 @app.route("/submit", methods=["POST"])
 def submit_notification():
     app.logger.info("Attempting to save to the DB")
-
+    app.logger.debug("Request: %s", request.form)
     save_to_db(request.form["animal_type"], request.form["location"],
                request.form["location_lat"], request.form["location_lon"],
                request.form["behaviour"])

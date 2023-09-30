@@ -3,6 +3,7 @@ import os
 import re
 
 import requests
+from dataclasses import asdict
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import (Application, CommandHandler, CallbackContext,
@@ -17,7 +18,8 @@ logging.basicConfig(
     level=logging.DEBUG)
 
 CONST_SPACE = "\n\n\n\n\n\n\n\n\n\n\n\n"
-SERVER_API_ADDRS = os.environ['SERVER_API_ADDRS']
+# SERVER_API_ADDRS = os.environ['SERVER_API_ADDRS']
+SERVER_API_ADDRS = 'real_chatter:8000'
 builder = Application.builder()
 builder.token(os.environ['TOKEN']).build()
 application = builder.build()
@@ -27,7 +29,15 @@ animal_update = AnimalUpdate()
 
 
 def form_api_request():
-    response = requests.post(SERVER_API_ADDRS + '/submit',
+    print(f"""\n
+            Animal Update:
+            animal_type: {animal_update.animal_type}
+            location_lat: {animal_update.location_lat}
+            location_lon: {animal_update.location_lon}
+            behaviour: {animal_update.behaviour}
+            image: {animal_update.image}\n
+            """)
+    response = requests.post(url=f"http://{SERVER_API_ADDRS}/submit",
                              data={
                                  "location": "user_location",
                                  "location_lat": animal_update.location_lat,
@@ -36,6 +46,10 @@ def form_api_request():
                                  "behaviour": animal_update.behaviour,
                              })
     animal_update.reset()
+    print()
+    print("Response from server:")
+    print(response.ok, response.status_code, response.text)
+    print()
     return response
 
 
@@ -70,20 +84,19 @@ async def text_callback(update: Update, context: CallbackContext):
             bot_state.BEHAVIOUR_RECEIVED = True
         elif bot_state.STATE == "LOCATION":
             if 'nie' in user_says:
-                animal_update.location_lat = ""
-                animal_update.location_lon = ""
-            bot_state.LOCATION_RECEIVED = True
+                animal_update.location_lat = 0.0
+                animal_update.location_lon = 0.0
+                bot_state.LOCATION_RECEIVED = True
         elif bot_state.STATE == "PHOTO":
             if 'nie' in user_says:
                 animal_update.image = ""
-            bot_state.PHOTO_RECEIVED = True
+                bot_state.PHOTO_RECEIVED = True
         if animal_update.is_done():
             form_api_request()
         msg = bot_state.next_state()
         await update.message.reply_text(escape_markdown(msg),
                                         parse_mode='MarkdownV2')
         return
-    await update.message.reply_text("Else")
 
 
 async def location_handler(update: Update, context: CallbackContext):
@@ -114,10 +127,11 @@ async def photo_handler(update: Update, context: CallbackContext):
                                   parse_mode='MarkdownV2')
 
 
-# this is the function that will be called when the user sends a location
-application.add_handler(MessageHandler(LOCATION, location_handler))
-application.add_handler(MessageHandler(PHOTO, photo_handler))
-application.add_handler(CommandHandler("start", start_callback))
-application.add_handler(MessageHandler(TEXT, text_callback))
+if __name__ == "__main__":
+    # this is the function that will be called when the user sends a location
+    application.add_handler(MessageHandler(LOCATION, location_handler))
+    application.add_handler(MessageHandler(PHOTO, photo_handler))
+    application.add_handler(CommandHandler("start", start_callback))
+    application.add_handler(MessageHandler(TEXT, text_callback))
 
-application.run_polling()
+    application.run_polling()

@@ -15,6 +15,19 @@ services:
     networks:
       - common
 
+  telegram_chat:
+    build: ./ 
+    volumes:
+      - ./src:/app/
+      - ./output:/app/output
+    command: gunicorn -b '0.0.0.0:8000' -w 4 'main:app'
+    env_file:
+      - .env
+    container_name: telegram_chat
+    restart: always
+    networks:
+      - common
+
   celery_worker:
     build: ./
     volumes:
@@ -23,13 +36,6 @@ services:
     command: celery -A 'celery_tasks.celery' worker
     env_file:
       - .env
-    networks:
-      - common
-
-  redis:
-    image: redis:latest
-    container_name: redis_chatter
-    restart: always
     networks:
       - common
 
