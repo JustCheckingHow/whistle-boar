@@ -10,7 +10,7 @@ def extract_next_action(xml):
         return "hangup"
     try:
         return re.search(r'action="(.+?)"', xml)[1]
-    except AttributeError:
+    except TypeError:
         print(xml)
 
 def extract_speech_result(xml):
@@ -32,7 +32,7 @@ if __name__ == "__main__":
         action = extract_next_action(r.text)
         if action == "hangup":
             break
-        with contextlib.suppress(AttributeError):
+        with contextlib.suppress(TypeError):
             response = extract_speech_result(r.text)
             print(f"Assistant: {response}")
         if "Gather" in r.text:

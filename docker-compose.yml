@@ -31,8 +31,6 @@ services:
       - .env
     container_name: telegram_chat
     restart: always
-    networks:
-      - common
 
   celery_worker:
     build: ./
@@ -42,8 +40,7 @@ services:
     command: celery -A 'celery_tasks.celery' worker
     env_file:
       - .env
-    networks:
-      - common
+
   frontend:
     build: ./whistleblower
     expose:
