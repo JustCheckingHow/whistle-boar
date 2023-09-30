@@ -1,5 +1,9 @@
 version: "3.3"
+
 services:
+
+  # ============== [Common] ==============
+
   real_chatter:
     build: ./
     ports:
@@ -10,7 +14,22 @@ services:
     command: gunicorn -b '0.0.0.0:8000' -w 4 'main:app' -t 180
     env_file:
       - .env
+    environment:
+      - VIRTUAL_HOST=api.gwizd.justcheckinghow.com
+      - VIRTUAL_PORT=8000
+      - LETSENCRYPT_HOST=api.gwizd.justcheckinghow.com
     container_name: real_chatter
+    restart: always
+
+  telegram_chat:
+    build: ./ 
+    volumes:
+      - ./src:/app/
+      - ./output:/app/output
+    command: gunicorn -b '0.0.0.0:8000' -w 4 'main:app'
+    env_file:
+      - .env
+    container_name: telegram_chat
     restart: always
     networks:
       - common
@@ -25,13 +44,14 @@ services:
       - .env
     networks:
       - common
-
-  redis:
-    image: redis:latest
-    container_name: redis_chatter
-    restart: always
-    networks:
-      - common
+  frontend:
+    build: ./whistleblower
+    expose:
+      - "5173"
+    environment:
+      - VIRTUAL_HOST=gwizd.justcheckinghow.com
+      - VIRTUAL_PORT=5173
+      - LETSENCRYPT_HOST=gwizd.justcheckinghow.com
 
   postgres:
     image: postgres:15.1
@@ -43,8 +63,3 @@ services:
       - ./postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
-    networks:
-      - common
-
-networks:
-  common:
