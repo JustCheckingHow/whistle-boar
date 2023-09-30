@@ -7,3 +7,4 @@ celery==5.3.1
 redis==4.5.4
 sqlalchemy==2.0.21
 psycopg2-binary
+flask-cors

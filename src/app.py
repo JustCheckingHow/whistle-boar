@@ -2,8 +2,10 @@ from flask import Flask
 import os
 from logging import getLogger, INFO
 from celery import Celery
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 app.secret_key = os.getenv("APP_SECRET")
 
 gunicorn_logger = getLogger('gunicorn.error')
