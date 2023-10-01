@@ -18,7 +18,7 @@ logging.basicConfig(
     level=logging.DEBUG)
 
 CONST_SPACE = "\n\n\n\n\n\n\n\n\n\n\n\n"
-SERVER_API_ADDRS = 'api.justcheckinghow.com'
+SERVER_API_ADDRS = 'api.gwizd.justcheckinghow.com'
 builder = Application.builder()
 builder.token(os.environ['TOKEN']).build()
 application = builder.build()
@@ -130,17 +130,17 @@ async def photo_handler(update: Update, context: CallbackContext):
 if __name__ == "__main__":
     # this is the function that will be called when the user sends a location
 
-    animal_update.reset()
-    animal_update.location_lat = 10
-    animal_update.location_lon = 20
-    animal_update.animal_type = "Kot"
-    animal_update.behaviour = "Biegał"
-    animal_update.image = "https://i.imgur.com/4M34hi2.jpeg"
+    # animal_update.reset()
+    # animal_update.location_lat = 10
+    # animal_update.location_lon = 20
+    # animal_update.animal_type = "Kot"
+    # animal_update.behaviour = "Biegał"
+    # animal_update.image = "https://i.imgur.com/4M34hi2.jpeg"
 
-    form_api_request()
-    # application.add_handler(MessageHandler(LOCATION, location_handler))
-    # application.add_handler(MessageHandler(PHOTO, photo_handler))
-    # application.add_handler(CommandHandler("start", start_callback))
-    # application.add_handler(MessageHandler(TEXT, text_callback))
+    # form_api_request()
+    application.add_handler(MessageHandler(LOCATION, location_handler))
+    application.add_handler(MessageHandler(PHOTO, photo_handler))
+    application.add_handler(CommandHandler("start", start_callback))
+    application.add_handler(MessageHandler(TEXT, text_callback))
 
-    # application.run_polling()
+    application.run_polling()
