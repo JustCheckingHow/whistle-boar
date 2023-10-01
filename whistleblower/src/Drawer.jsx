@@ -142,7 +142,9 @@ const Filters = () => {
       justifyContent: "center",
       height: "100%",
     }}>
-      <span>
+      <span style={{
+        margin: "16pt",
+      }}>
         Masz zgłoszenie? Zadzwoń na numer +48 732 070 941
       </span>
       <Autocomplete
