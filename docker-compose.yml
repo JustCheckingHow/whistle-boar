@@ -59,10 +59,11 @@ services:
       - postgres_chatter_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    networks:
+      - shared_network
 
 volumes:
   postgres_chatter_data:
 
 networks:
   shared_network:
-    external: true

@@ -110,8 +110,8 @@ def main_loop():
         if i not in gathered_already
     ]
 
-    # response = openai_call(session["conversation"], "gpt-4")
-    response = openai_call(session["conversation"], "ft:gpt-3.5-turbo-0613:flathub::84En2q8s")
+    response = openai_call(session["conversation"], "gpt-4")
+    # response = openai_call(session["conversation"], "ft:gpt-3.5-turbo-0613:flathub::84En2q8s")
     session["conversation"].append({"role": "assistant", "content": response})
     app.logger.info("Response from data extraction: %s", response)
 
@@ -341,11 +341,11 @@ def did_you_know():
 
     sample = """Znalezionemu jeżowi można podać wodę, ale nie powinno się go karmić. Zwierzę nieodżywione, wyziębione lub w szoku, może bowiem źle zareagować na pokarm. Można też zadbać o to, by parki, ogrody i podwórka stały się miejscami bardziej przyjaznymi dla jeży. Wystarczy mała sterta gałązek i liści, albo specjalny domek dla jeży i pozostawienie przejść dla jeży w ogrodzeniu, by ten pożyteczny i sympatyczny ssak mógł znaleźć schronienie. Odwdzięczy się regularnymi odwiedzinami i ekologiczną eliminacją nadmiaru ślimaków i owadów z otoczenia.
 """
-    system = "Jesteś pomocnym asystentem, który przygotowuje ciekawostki na temat dzikich zwierząt. Twoim zadaniem jest przygotowanie ciekawostki na temat danego zwierzęcia."
+    system = "Jesteś pomocnym asystentem, który przygotowuje krótkie ciekawostki na temat dzikich zwierząt. Twoim zadaniem jest przygotowanie ciekawostki na temat danego zwierzęcia. Skup się na tym co zrobić jeżeli spotkasz je jesienią."
     tmp_convo = [{"role": "system", "content": system}]
-    tmp_convo.append({"role": "user", "content": "Moje ulubione zwierzę to jeż. Przygotuj ciekawostkę na jego temat."})
+    tmp_convo.append({"role": "user", "content": "Moje ulubione zwierzę to jeż. Przygotuj krótką ciekawostkę na jego temat."})
     tmp_convo.append({"role": "assistant", "content": sample})
-    tmp_convo.append({"role": "user", "content": f"Moje ulubione zwierzę to {animal}. Przygotuj ciekawostkę na jego temat."})
+    tmp_convo.append({"role": "user", "content": f"Moje ulubione zwierzę to {animal}. Przygotuj krótką ciekawostkę na jego temat."})
 
     response = openai_call(tmp_convo, "gpt-3.5-turbo", 0.5)
     return jsonify({"response": response})

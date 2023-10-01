@@ -12,6 +12,8 @@ import Button from '@mui/material/Button';
 import { FilterContext } from './filterContext';
 import { Modal } from '@mui/base/Modal';
 import { Box, createTheme, Stack, ThemeProvider, useTheme } from '@mui/material';
+import ReactPlaceholder from 'react-placeholder';
+import "react-placeholder/lib/reactPlaceholder.css";
 
 function capitalizeFirstLetter(string) {
   return string?.charAt(0)?.toUpperCase() + string?.slice(1);
@@ -21,12 +23,15 @@ function AnimalPopover(props) {
   const { open, handleClose, animal } = props;
 
   const [funFact, setFunFact] = useState("");
+  const [loading, setLoading] = useState(true);
 
   React.useEffect(() => {
+    setLoading(true);
     fetch(`${import.meta.env.VITE_ROOT_API}/did_you_know?animal=${animal.animal_type}`)
       .then(response => response.json())
       .then(data => {
         setFunFact(data.response);
+        setLoading(false);
       });
   }, [animal]);
 
@@ -108,15 +113,17 @@ function AnimalPopover(props) {
               </Stack>
             </Stack>
             <Stack>
-              <p 
+              <p
                 style={{
                   fontSize: "20px",
                   lineHeight: "36px",
                   fontWeight: "600",
                 }}>
-              {capitalizeFirstLetter(animal.animal_type)} - czy wiesz, że?
+                {capitalizeFirstLetter(animal.animal_type)} - czy wiesz, że?
               </p>
-              <span>{funFact}</span>
+              <ReactPlaceholder type="text" rows={3} ready={!loading}>
+                <span>{funFact}</span>
+              </ReactPlaceholder>
             </Stack>
           </Box>
         </Stack>
