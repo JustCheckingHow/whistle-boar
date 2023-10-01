@@ -1,9 +1,11 @@
 FROM node:18 as build
 
 WORKDIR /app
-COPY . /app
+COPY package.json ./
 
-RUN npm install
+RUN yarn install
+
+COPY . /app
 
 EXPOSE 5173
 
