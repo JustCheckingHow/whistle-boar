@@ -310,7 +310,7 @@ def submit_notification():
     app.logger.debug("Request: %s", request.form)
     save_to_db(request.form["animal_type"], request.form["location"],
                request.form["location_lat"], request.form["location_lon"],
-               request.form["behaviour"])
+               request.form["behaviour"], request.form["condition"])
     return jsonify({"status": "added to the DB"})
 
 
@@ -354,3 +354,25 @@ def did_you_know():
     return jsonify({"response": response})
 
     
+@app.route("/reverse_geocode", methods=["GET"])
+def reverse_geocode():
+    lat = request.args.get("lat")
+    lon = request.args.get("lon")
+    url = f"https://maps.googleapis.com/maps/api/geocode/json?latlng={lat},{lon}&key=" + os.environ["GOOGLE_KEY"]
+    r = requests.get(url)
+    return jsonify(r.json())
+
+
+@app.route("/autocomplete", methods=["GET"])
+def autocomplete():
+    place = request.args.get("place")
+    url = f"https://maps.googleapis.com/maps/api/place/autocomplete/json?input={place}&types=address&key=" + os.environ["GOOGLE_KEY"]
+    r = requests.get(url)
+    return jsonify(r.json())
+
+@app.route("/place_details", methods=["GET"])
+def place_details():
+    place_id = request.args.get("place_id")
+    url = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&key=" + os.environ["GOOGLE_KEY"]
+    r = requests.get(url)
+    return jsonify(r.json())
