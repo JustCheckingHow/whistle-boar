@@ -31,25 +31,27 @@ Jeżeli uznasz że rozmowa została zakończona, dodaj do swojej odpowiedzi sło
 WAŻNE: Twoja wypowiedź powinna mieć format '<WYPOWIEDŹ> | <NOWOUZYSKANA INFORMACJA>:<INFORMACJA> | <NOWOUZYSKANA INFORMACJA 2>:<INFORMACJA 2> '. /<NIE> oznacza, czy użytkownik uzupełnił w swojej odpowiedzi jakąś z informacji których potrzebujesz. Jeżeli użytkownik nie podał żadnej informacji, nie uzupełniaj pola `NOWOUZYSKANA INFORMACJA`. 
 Nie rób podsumowania rozmowy, podaj tylko informację uzyskaną bezpośrednio w poprzedniej odpowiedzi.
 
-Zawsze używaj pełnej nazwy zwierzęcia, np 'niedźwiedź' zamiast 'miś', 'pies' zamist 'piesek' itp.
+Zawsze używaj pełnej polskiej nazwy zwierzęcia, np 'niedźwiedź' zamiast 'miś', 'pies' zamist 'piesek' itp.
 
 Przykład 1:
- - System: Data that is still needed: ["gatunek zwierzęta", "lokalizacja", "zachowanie"]
+ - System: Data that is still needed: ["gatunek zwierzęta", "lokalizacja", "zachowanie", "kondycja zwierzęcia (ranny, zdrowy, martwy)"]
  - Użytkownik: Tak, spotkałem dzika
  - Asystent: gdzie dokładnie był? | gatunek zwierzęcia: dzik
 
 Przykład 2:
- - System: Data that is still needed: ["gatunek zwierzęta", "lokalizacja", "zachowanie"]
+ - System: Data that is still needed: ["gatunek zwierzęta", "lokalizacja", "zachowanie", "kondycja zwierzęcia (ranny, zdrowy, martwy)"]
  - Użytkownik: Oczywiście, to jest Kraków, ul. Karmelicka 2. To był dzik.
  - Asystent: jak się zachowywał? | lokalizacja: Kraków ul. Karmelicka 2 | gatune zwierzęcia: dzik
 
 Przykład 3:
- - System: Data that is still needed: ["gatunek zwierzęta", "lokalizacja", "zachowanie"]
+ - System: Data that is still needed: ["gatunek zwierzęta", "lokalizacja", "zachowanie", "kondycja zwierzęcia (ranny, zdrowy, martwy)"]
  - Użytkownik: Tak, stał na drodze tamując ruch
- - Asystent: Gdzie dokładnie się znajdujecie? | zachowanie: stoi na drodze tamując ruch
+ - Asystent: W jakim stanie jest zwierzę? | zachowanie: stoi na drodze tamując ruch
+ - Użytkownik: Wyglądał na zdrowego
+ - Asystent: Gdzie dokładnie się znajdujecie? | kondycja zwierzęcia (ranny, zdrowy, martwy): zdrowy
 
 Przykład 4:
- - System: Data that is still needed: ["lokalizacja", "zachowanie"]
+ - System: Data that is still needed: ["lokalizacja", "zachowanie", "kondycja zwierzęcia (ranny, zdrowy, martwy)"]
  - Użytkownik: To było we Wrocławiu
  - Asystent: Czy możesz podać dokładną lokalizację?
  - Użytkownik: Tak, to było na ulicy Świdnickiej
@@ -83,6 +85,7 @@ def voice():
     session["gathered_info"] = {}
     session["address_confirmed"] = False
     session["notification_confirmed"] = False
+    session["to_gather"] = ["gatunek zwierzęcia", "lokalizacja", "zachowanie", "kondycja zwierzęcia (ranny, zdrowy, martwy)"]
 
     resp = _tts(GREETING)
     # resp.say("You can answer in your own language", language="en-US", voice=f"Google.en-US-Wavenet-B")
@@ -103,7 +106,7 @@ def main_loop():
 
     gathered_already = gathered_info.keys()
     to_gather = [
-        i for i in ["gatunek zwierzęcia", "lokalizacja", "zachowanie"]
+        i for i in session["to_gather"]
         if i not in gathered_already
     ]
 
@@ -116,6 +119,8 @@ def main_loop():
     for row in gathered:
         try:
             key, value = row.split(":")
+            if key == "kondycja zwierzęcia":
+                key = "kondycja zwierzęcia (ranny, zdrowy, martwy)"
             if key.strip() in gathered_info:
                 gathered_info[key.strip()] += f", {value.strip()}"
             else:
@@ -127,7 +132,7 @@ def main_loop():
 
     gathered_already = gathered_info.keys()
     to_gather = [
-        i for i in ["gatunek zwierzęcia", "lokalizacja", "zachowanie"]
+        i for i in session["to_gather"]
         if i not in gathered_already
     ]
 
@@ -252,7 +257,8 @@ def confirm_submission():
                        session["gathered_info"]["lokalizacja"],
                        session["address_coords"]["lat"],
                        session["address_coords"]["lng"],
-                       session["gathered_info"]["zachowanie"])
+                       session["gathered_info"]["zachowanie"],
+                       session["gathered_info"]["kondycja zwierzęcia (ranny, zdrowy, martwy)"])
 
             resp = _tts(
                 "Świetnie, zgłoszenie zostało potwierdzone. Czy masz jeszcze jakieś pytania?"
@@ -308,7 +314,7 @@ def submit_notification():
 
 
 def save_to_db(animal_type, location_str, location_lat, location_lon,
-               behaviour):
+               behaviour, condition):
     uid = str(uuid.uuid4())
     with Session(engine) as db_sess:
         notif = WildAnimalNotification(id=uid,
@@ -317,6 +323,7 @@ def save_to_db(animal_type, location_str, location_lat, location_lon,
                                        location_lat=float(location_lat),
                                        location_lon=float(location_lon),
                                        behaviour=behaviour,
+                                       condition=condition,
                                        created_at=datetime.datetime.now())
         db_sess.add(notif)
         db_sess.commit()
@@ -329,3 +336,20 @@ def data():
         notifs = db_sess.query(WildAnimalNotification).all()
         notifs = [notif.to_dict() for notif in notifs]
         return jsonify(notifs)
+
+@app.route("/did_you_know", methods=["GET"])
+def did_you_know():
+    animal = request.args.get("animal")
+
+    sample = """Znalezionemu jeżowi można podać wodę, ale nie powinno się go karmić. Zwierzę nieodżywione, wyziębione lub w szoku, może bowiem źle zareagować na pokarm. Można też zadbać o to, by parki, ogrody i podwórka stały się miejscami bardziej przyjaznymi dla jeży. Wystarczy mała sterta gałązek i liści, albo specjalny domek dla jeży i pozostawienie przejść dla jeży w ogrodzeniu, by ten pożyteczny i sympatyczny ssak mógł znaleźć schronienie. Odwdzięczy się regularnymi odwiedzinami i ekologiczną eliminacją nadmiaru ślimaków i owadów z otoczenia.
+"""
+    system = "Jesteś pomocnym asystentem, który przygotowuje krótkie ciekawostki na temat dzikich zwierząt. Twoim zadaniem jest przygotowanie ciekawostki na temat danego zwierzęcia. Skup się na tym co zrobić jeżeli spotkasz je jesienią."
+    tmp_convo = [{"role": "system", "content": system}]
+    tmp_convo.append({"role": "user", "content": "Moje ulubione zwierzę to jeż. Przygotuj krótką ciekawostkę na jego temat."})
+    tmp_convo.append({"role": "assistant", "content": sample})
+    tmp_convo.append({"role": "user", "content": f"Moje ulubione zwierzę to {animal}. Przygotuj krótką ciekawostkę na jego temat."})
+
+    response = openai_call(tmp_convo, "gpt-3.5-turbo", 0.5)
+    return jsonify({"response": response})
+
+    

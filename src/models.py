@@ -1,7 +1,7 @@
 from typing import List
 from typing import Optional
 from sqlalchemy import ForeignKey
-from sqlalchemy import String, Integer, Float
+from sqlalchemy import String, Integer, Float, text
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
@@ -20,6 +20,7 @@ class WildAnimalNotification(Base):
     location_lat: Mapped[float] = mapped_column(Float)
     location_lon: Mapped[float] = mapped_column(Float)
     behaviour: Mapped[str] = mapped_column(String(255))
+    condition: Mapped[str] = mapped_column(String(255))
     image: Mapped[Optional[str]] = mapped_column(String(255))
     created_at: Mapped[str] = mapped_column(String(255))
     deleted_at: Mapped[Optional[str]] = mapped_column(String(255))
@@ -35,3 +36,5 @@ engine = create_engine(f'postgresql://postgres:{os.environ["POSTGRES_PASSWORD"]}
 
 if __name__ == "__main__":
     Base.metadata.create_all(engine)
+    connection = engine.connect()
+    connection.execute(text('alter table wild_animal_notification add column condition varchar(255)'))
