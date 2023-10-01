@@ -307,7 +307,7 @@ def confirm_submission():
 @app.route("/submit", methods=["POST"])
 def submit_notification():
     app.logger.info("Attempting to save to the DB")
-    app.logger.debug("Request: %s", request.form)
+    app.logger.info("Request: %s", request.form)
     save_to_db(request.form["animal_type"], request.form["location"],
                request.form["location_lat"], request.form["location_lon"],
                request.form["behaviour"], request.form["condition"])
