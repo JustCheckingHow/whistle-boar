@@ -189,6 +189,11 @@ function GoogleMapComponent() {
         return null;
       }
 
+      // gmt+0
+      const epoch = new Date(marker.created_at).getTime();
+      if(epoch < filterContext.filters.time?.min || epoch > filterContext.filters.time?.max) 
+        return null;
+
       const element = (
         <Marker
           key={key}
@@ -206,7 +211,7 @@ function GoogleMapComponent() {
 
       return element;
     }));
-  }, [data, zoom, filterContext.filters['animals']]);
+  }, [data, zoom, filterContext.filters.animals, filterContext.filters.time?.min, filterContext.filters.time?.max]);
 
 
   return (

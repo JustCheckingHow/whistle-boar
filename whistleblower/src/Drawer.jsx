@@ -146,7 +146,7 @@ const Filters = () => {
         multiple
         onChange={(event, value) => {
           filters.setFilters({
-            ...filters.filter,
+            ...filters.filters,
             animals: value,
           });
         }}
@@ -157,31 +157,86 @@ const Filters = () => {
 
 const TimeSlider = () => {
   const filters = React.useContext(FilterContext);
+  // max distance: 1 day in seconds
+  const maxDistance = 24 * 60 * 60;
+  // min distance: 1 hour in seconds
+  const minDistance = 60 * 60;
 
-  const [value, setValue] = React.useState([0, 24]);
+  // min: current epoch rounded up to hour minus 7 days
+  const roundedUp = Math.ceil(new Date().getTime() / 1000);
+  const epochMin = roundedUp - (roundedUp % (60 * 60)) - 7 * 24 * 60 * 60;
 
-  const handleChange = (event, newValue) => {
-    setValue(newValue);
+  // max: current epoch rounded up to hour
+  const epochMax = roundedUp - (roundedUp % (60 * 60));
+
+  // current: current epoch - max distance
+  const defaultEpoch = epochMax - maxDistance;
+
+  const [value, setValue] = React.useState([defaultEpoch, epochMax]);
+
+  const handleChange = (event, newValue, activeThumb) => {
+    // if active thumb is left one, check if distance is not too big
+    // if it is, set right thumb to shift left thumb by difference
+    if (activeThumb === 0) {
+      if (newValue[1] - newValue[0] > maxDistance) {
+        setValue([newValue[0], newValue[0] + maxDistance]);
+      } else if (newValue[1] - newValue[0] < minDistance) {
+        setValue([newValue[0], newValue[0] + minDistance]);
+      } else {
+        setValue(newValue);
+      }
+    }
+
+    // for the right thumb, do analogical thing
+    if (activeThumb === 1) {
+      if (newValue[1] - newValue[0] > maxDistance) {
+        setValue([newValue[1] - maxDistance, newValue[1]]);
+      } else if (newValue[1] - newValue[0] < minDistance) {
+        setValue([newValue[1] - minDistance, newValue[1]]);
+      } else {
+        setValue(newValue);
+      }
+    }
   };
+
+  React.useEffect(() => {
+    filters.setFilters({
+      ...filters.filters,
+      time: {
+        min: new Date(value[0]*1000),
+        max: new Date(value[1]*1000),
+      },
+    });
+  }, [value]);
+
+  const timestampToDate = (timestamp) => {
+    const date = new Date(timestamp * 1000);
+    return `${date.getDate()}.${date.getMonth() + 1}.${date.getFullYear()} ${date.getHours()+1}:00`;
+  }
 
   return (
     <div
       style={{
         position: 'fixed',
-        bottom: 0,
+        bottom: "5%",
         right: "5%",
-        width: '25%',
+        width: '45%',
         backgroundColor: 'white',
         zIndex: 1000,
+        boxShadow: '0px 0px 10px 0px rgba(0,0,0,0.75)',
+        padding: "0 16pt",
       }}
     >
-      <h2>Time</h2>
+      <h2>Oś czasu</h2>
       <Slider
         value={value}
         onChange={handleChange}
         valueLabelDisplay="auto"
-        min={0}
-        max={24}
+        min={epochMin}
+        max={epochMax}
+        getAriaValueText={timestampToDate}
+        valueLabelFormat={timestampToDate}
+        step={60*60}
       />
     </div>
   );
