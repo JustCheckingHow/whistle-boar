@@ -14,6 +14,8 @@ services:
     command: gunicorn -b '0.0.0.0:8000' -w 4 'main:app' -t 180
     env_file:
       - .env
+    networks:
+      - shared_network
     environment:
       - VIRTUAL_HOST=api.gwizd.justcheckinghow.com
       - VIRTUAL_PORT=8000
@@ -21,12 +23,13 @@ services:
     container_name: real_chatter
     restart: always
 
+
   telegram_chat:
     build: ./ 
     volumes:
       - ./src:/app/
       - ./output:/app/output
-    command: gunicorn -b '0.0.0.0:8000' -w 4 'main:app'
+    command: python bot.py
     env_file:
       - .env
     container_name: telegram_chat
@@ -34,20 +37,32 @@ services:
 
   frontend:
     build: ./whistleblower
-    expose:
-      - "5173"
+    command: yarn vite --host 0.0.0.0
+    ports:
+      - "5173:5173"
     environment:
       - VIRTUAL_HOST=gwizd.justcheckinghow.com
       - VIRTUAL_PORT=5173
       - LETSENCRYPT_HOST=gwizd.justcheckinghow.com
+    networks:
+      - shared_network
+    # volumes:
+    #   - ./whistleblower:/app
 
-  postgres:
+  postgres-chatter:
     image: postgres:15.1
     container_name: postgres_chatter
     restart: always
     env_file:
       - .env
     volumes:
-      - ./postgres_data:/var/lib/postgresql/data
+      - postgres_chatter_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+
+volumes:
+  postgres_chatter_data:
+
+networks:
+  shared_network:
+    external: true

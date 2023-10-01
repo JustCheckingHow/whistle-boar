@@ -7,4 +7,4 @@ RUN npm install
 
 EXPOSE 5173
 
-CMD ["yarn", "run", "dev"]
+CMD ["npm", "run", "dev"]
