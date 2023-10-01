@@ -23,14 +23,15 @@ services:
 
   frontend:
     build: ./whistleblower
+    command: yarn vite --host 0.0.0.0
     ports:
       - "5173:5173"
     environment:
       - VIRTUAL_HOST=gwizd.justcheckinghow.com
       - VIRTUAL_PORT=5173
       - LETSENCRYPT_HOST=gwizd.justcheckinghow.com
-    volumes:
-      - ./whistleblower:/app
+    # volumes:
+    #   - ./whistleblower:/app
 
   postgres-chatter:
     image: postgres:15.1
