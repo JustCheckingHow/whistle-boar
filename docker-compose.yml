@@ -46,3 +46,8 @@ services:
 
 volumes:
   postgres_chatter_data:
+
+networks:
+  default:
+    name: access-your-heart_default
+    external: true
