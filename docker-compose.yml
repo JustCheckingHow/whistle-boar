@@ -21,6 +21,18 @@ services:
     container_name: real_chatter
     restart: always
 
+
+  telegram_chat:
+    build: ./ 
+    volumes:
+      - ./src:/app/
+      - ./output:/app/output
+    command: python bot.py
+    env_file:
+      - .env
+    container_name: telegram_chat
+    restart: always
+
   frontend:
     build: ./whistleblower
     command: yarn vite --host 0.0.0.0
@@ -49,5 +61,5 @@ volumes:
 
 networks:
   default:
-    name: access-your-heart_default
-    external: true
+    # name: access-your-heart_default
+    # external: true
