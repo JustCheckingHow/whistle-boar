@@ -32,15 +32,6 @@ services:
     container_name: telegram_chat
     restart: always
 
-  celery_worker:
-    build: ./
-    volumes:
-      - ./src:/app/
-      - ./output:/app/output
-    command: celery -A 'celery_tasks.celery' worker
-    env_file:
-      - .env
-
   frontend:
     build: ./whistleblower
     expose:
