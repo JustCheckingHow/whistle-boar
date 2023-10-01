@@ -9,14 +9,15 @@ import Autocomplete from '@mui/material/Autocomplete';
 import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
-import { Button, TextField } from '@mui/material';
+import { Button, MenuItem, Select, TextField } from '@mui/material';
 import { StyledModal, StyledBackdrop } from "./App";
 
 import Slider from '@mui/material/Slider';
 
 import { FilterContext } from './filterContext';
 import { useFormik } from 'formik';
-import { Dropdown } from '@mui/base';
+import { usePlacesWidget } from "react-google-autocomplete";
+import GoogleMapsComponent from './GoogleMaps';
 
 const drawerWidth = 300;
 
@@ -141,6 +142,9 @@ const Filters = () => {
       justifyContent: "center",
       height: "100%",
     }}>
+      <span>
+        Masz zgłoszenie? Zadzwoń na numer +48 732 070 941
+      </span>
       <Autocomplete
         id="filter-animals"
         options={options}
@@ -262,55 +266,100 @@ function AddAnimalForm(props) {
   const { open, handleClose } = props;
   const formik = useFormik({
     initialValues: {
-      species: '',
+      animal_type: '',
       image: '',
-      description: '',
-      condition: '',
+      behaviour: '',
+      condition: 'zdrowe',
       location: '',
+      location_lon: '',
+      location_lat: '',
+    },
+    onSubmit: (values) => {
+      const formData = new FormData();
+      formData.append('animal_type', values.animal_type);
+      formData.append('image', values.image);
+      formData.append('behaviour', values.behaviour);
+      formData.append('condition', values.condition);
+      formData.append('location', values.location);
+      formData.append('location_lon', values.location_lon);
+      formData.append('location_lat', values.location_lat);
+
+      fetch(`${import.meta.env.VITE_ROOT_API}/submit`, {
+        method: 'POST',
+        body: formData,
+      }).then(() => {
+        handleClose();
+      });
     }
   })
+
+  React.useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        fetch(`${import.meta.env.VITE_ROOT_API}/reverse_geocode?lat=${position.coords.latitude}&lon=${position.coords.longitude}`)
+          .then((response) => response.json())
+          .then((data) => {
+            console.log(data)
+            formik.setFieldValue('location', data.display_name);
+          });
+      })
+    }
+  }, []);
 
   return (
     <StyledModal
       aria-labelledby="unstyled-modal-title"
-      aria-describedby="unstyled-modal-description"
+      aria-describedby="unstyled-modal-behaviour"
       open={open}
       onClose={handleClose}
       slots={{ backdrop: StyledBackdrop }}
     >
       <Box sx={style}>
-        <Typography id="unstyled-modal-title" variant="h6" component="h2" sx={{mb:2}}>
+        <Typography id="unstyled-modal-title" variant="h6" component="h2" sx={{ mb: 2 }}>
           Dodaj zwierzę
         </Typography>
-          <form onSubmit={formik.handleSubmit}>
-            <TextField
-              fullWidth
-              id="species"
-              name="species"
-              label="Gatunek"
-              value={formik.values.species}
-              onChange={formik.handleChange}
-              sx={{ mb: 2 }}
-            />
-            <Dropdown
-              fullWidth
-              id="condition"
-              name="condition"
-              label="Stan"
-              value={formik.values.condition}
-              onChange={formik.handleChange}
-              sx={{ mb: 2 }}
-            />
-            <TextField
-              fullWidth
-              id="location"
-              name="location"
-              label="Lokalizacja"
-              value={formik.values.location}
-              onChange={formik.handleChange}
-              sx={{ mb: 2 }}
-            />
-          </form>
+        <form onSubmit={formik.handleSubmit}>
+          <TextField
+            fullWidth
+            id="animal_type"
+            name="animal_type"
+            label="Gatunek"
+            value={formik.values.animal_type}
+            onChange={formik.handleChange}
+            sx={{ mb: 2 }}
+          />
+          <Select
+            fullWidth
+            id="condition"
+            name="condition"
+            label="Stan"
+            value={formik.values.condition}
+            onChange={formik.handleChange}
+            sx={{ mb: 2 }}
+            defaultValue="zdrowe"
+          >
+            <MenuItem value="zdrowe">Zdrowe</MenuItem>
+            <MenuItem value="ranne">Ranne</MenuItem>
+            <MenuItem value="martwe">Martwe</MenuItem>
+          </Select>
+          <GoogleMapsComponent 
+            callback={({lng, lat, location}) => {
+              formik.setFieldValue('location_lon', lng);
+              formik.setFieldValue('location_lat', lat);
+              formik.setFieldValue('location', location);
+            }}
+          />
+          <TextField
+            fullWidth
+            id="behaviour"
+            name="behaviour"
+            label="Zachowanie"
+            value={formik.values.behaviour}
+            onChange={formik.handleChange}
+            sx={{ mb: 2, mt: 2 }}
+          />
+          <Button type="submit" variant="contained" sx={{ float: 'right' }}>Dodaj</Button>
+        </form>
       </Box>
 
     </StyledModal >
