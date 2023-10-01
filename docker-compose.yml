@@ -21,42 +21,27 @@ services:
     container_name: real_chatter
     restart: always
 
-  telegram_chat:
-    build: ./ 
-    volumes:
-      - ./src:/app/
-      - ./output:/app/output
-    command: gunicorn -b '0.0.0.0:8000' -w 4 'main:app'
-    env_file:
-      - .env
-    container_name: telegram_chat
-    restart: always
-
-  celery_worker:
-    build: ./
-    volumes:
-      - ./src:/app/
-      - ./output:/app/output
-    command: celery -A 'celery_tasks.celery' worker
-    env_file:
-      - .env
-
   frontend:
     build: ./whistleblower
-    expose:
-      - "5173"
+    ports:
+      - "5173:5173"
     environment:
       - VIRTUAL_HOST=gwizd.justcheckinghow.com
       - VIRTUAL_PORT=5173
       - LETSENCRYPT_HOST=gwizd.justcheckinghow.com
+    volumes:
+      - ./whistleblower:/app
 
-  postgres:
+  postgres-chatter:
     image: postgres:15.1
     container_name: postgres_chatter
     restart: always
     env_file:
       - .env
     volumes:
-      - ./postgres_data:/var/lib/postgresql/data
+      - postgres_chatter_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+
+volumes:
+  postgres_chatter_data:
