@@ -76,6 +76,7 @@ def access():
             app.logger.info(f"Received results {results}")
             session['state'] = 0
             session['responses'] = []
+            resp.hangup()
     else:
         session['state'] = 1
         session['responses'] = []

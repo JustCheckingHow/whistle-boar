@@ -42,6 +42,7 @@ def form_api_request():
                                  "location_lat": animal_update.location_lat,
                                  "location_lon": animal_update.location_lon,
                                  "animal_type": animal_update.animal_type,
+                                 "condition": "",
                                  "behaviour": animal_update.behaviour,
                              })
     animal_update.reset()
