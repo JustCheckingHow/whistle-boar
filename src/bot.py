@@ -36,7 +36,7 @@ def form_api_request():
             behaviour: {animal_update.behaviour}
             image: {animal_update.image}\n
             """)
-    response = requests.post(url=f"http://{SERVER_API_ADDRS}/submit",
+    response = requests.post(url=f"https://{SERVER_API_ADDRS}/submit",
                              data={
                                  "location": "user_location",
                                  "location_lat": animal_update.location_lat,
