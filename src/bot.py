@@ -18,7 +18,7 @@ logging.basicConfig(
     level=logging.DEBUG)
 
 CONST_SPACE = "\n\n\n\n\n\n\n\n\n\n\n\n"
-SERVER_API_ADDRS = 'api.justcheckinghow.com'
+SERVER_API_ADDRS = 'api.gwizd.justcheckinghow.com'
 builder = Application.builder()
 builder.token(os.environ['TOKEN']).build()
 application = builder.build()
