@@ -66,22 +66,13 @@ const DrawerHeader = styled('div')(({ theme }) => ({
 
 export default function PersistentDrawerLeft(props) {
   const theme = useTheme();
-  const [open, setOpen] = React.useState(true);
-
-  const handleDrawerOpen = () => {
-    setOpen(true);
-  };
-
-  const handleDrawerClose = () => {
-    setOpen(false);
-  };
 
   const [filters, setFilters] = React.useState({});
   const [uniqueAnimals, setUniqueAnimals] = React.useState([]);
   const [currentAnimal, setCurrentAnimal] = React.useState("");
 
   return (
-    <FilterContext.Provider 
+    <FilterContext.Provider
       value={{
         filters,
         setFilters,
@@ -93,16 +84,18 @@ export default function PersistentDrawerLeft(props) {
     >
       <Box sx={{ display: 'flex' }}>
         <CssBaseline />
-        <AppBar position="fixed" open={open}>
+        <AppBar
+          position="fixed"
+          sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, backgroundColor: "#ffffff", color: "#000000" }}
+        >
           <Toolbar>
             <IconButton
               color="inherit"
               aria-label="open drawer"
-              onClick={handleDrawerOpen}
               edge="start"
-              sx={{ mr: 2, ...(open && { display: 'none' }) }}
+              sx={{ mr: 2 }}
             >
-              <MenuIcon />
+              <img src="logo.jpg" style={{ width: "50px", height: "50px" }} />
             </IconButton>
             <Typography variant="h6" noWrap component="div">
               Whistleboar
@@ -116,27 +109,23 @@ export default function PersistentDrawerLeft(props) {
             '& .MuiDrawer-paper': {
               width: drawerWidth,
               boxSizing: 'border-box',
+              backgroundColor: "#eaeaea",
             },
           }}
-          variant="persistent"
+          variant="permanent"
           anchor="left"
-          open={open}
         >
           <DrawerHeader>
-            <IconButton onClick={handleDrawerClose}>
-              {theme.direction === 'ltr' ? <ChevronLeftIcon /> : <ChevronRightIcon />}
-            </IconButton>
           </DrawerHeader>
           <Divider />
           <Filters />
         </Drawer>
-        <Main open={open}>
+        <Main open={true}>
           <DrawerHeader />
           {props.children}
         </Main>
       </Box>
       <TimeSlider />
-      <StoryTimeBox />
     </FilterContext.Provider>
   );
 }
@@ -148,12 +137,12 @@ const Filters = () => {
 
   return (
     <div>
-      <h1>Filters</h1>
+      <h1>Filtry</h1>
       <Autocomplete
         id="filter-animals"
         options={options}
-        sx={{ width: 300 }}
-        renderInput={(params) => <TextField {...params} label="Animals" />}
+        sx={{ margin: "16pt" }}
+        renderInput={(params) => <TextField {...params} label="Zwierzęta" sx={{ backgroundColor: "white" }} />}
         multiple
         onChange={(event, value) => {
           filters.setFilters({

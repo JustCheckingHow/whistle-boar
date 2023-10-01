@@ -22,7 +22,6 @@ export const Marker = (props) => {
     className="animal-marker"
     style={{
       backgroundColor: hovered ? 'red' : color,
-      borderColor: hovered ? 'red' : color,
       width: `${RADIUS_MAP[props.zoom]}px`,
       height: `${RADIUS_MAP[props.zoom]}px`,
     }}

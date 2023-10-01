@@ -2,43 +2,127 @@ import './App.css'
 import React, { useRef, useEffect, useState } from 'react'
 import GoogleMapReact from 'google-map-react';
 import { Marker } from './Marker';
-import Popover from '@mui/material/Popover';
+import PropTypes from 'prop-types';
+import clsx from 'clsx';
 import { styled } from '@mui/system';
 import Drawer from "./Drawer";
+import ClearIcon from '@mui/icons-material/Clear';
+import Button from '@mui/material/Button';
 
 import { FilterContext } from './filterContext';
+import { Modal } from '@mui/base/Modal';
+import { Box, createTheme, Stack, ThemeProvider, useTheme } from '@mui/material';
 
-const PopupBody = styled('div')(
-  ({ theme }) => `
-  width: max-content;
-  padding: 12px 16px;
-  margin: 8px;
-  border-radius: 8px;
-  background-color: #fff;
-  font-family: 'IBM Plex Sans', sans-serif;
-  font-weight: 500;
-  font-size: 0.875rem;
-  z-index: 1;
-`,
-);
+function capitalizeFirstLetter(string) {
+  return string?.charAt(0)?.toUpperCase() + string?.slice(1);
+}
 
 function AnimalPopover(props) {
-  const { anchorEl, handleClose, animal } = props;
-  const open = Boolean(anchorEl);
-  const id = open ? 'simple-popover' : undefined;
+  const { open, handleClose, animal } = props;
+
+  const [funFact, setFunFact] = useState("");
+
+  React.useEffect(() => {
+    fetch(`${import.meta.env.VITE_ROOT_API}/did_you_know?animal=${animal.animal_type}`)
+      .then(response => response.json())
+      .then(data => {
+        setFunFact(data.response);
+      });
+  }, [animal]);
 
   return (
-    <Popover
-      id={id}
+    <StyledModal
+      aria-labelledby="unstyled-modal-title"
+      aria-describedby="unstyled-modal-description"
       open={open}
-      anchorEl={anchorEl}
       onClose={handleClose}
+      slots={{ backdrop: StyledBackdrop }}
     >
-      <PopupBody>
-        <h2>{animal.animal_type}</h2>
-        <p><b>Zachowanie</b>: {animal.behaviour}</p>
-      </PopupBody>
-    </Popover>
+      <Box sx={style}>
+        <Stack>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            sx={{
+              backgroundColor: "#0055D3",
+              padding: "0 0 0 32px"
+            }}>
+            <h2 style={{
+              color: "white",
+              size: "30px",
+              fontWeight: "600",
+              lineHeight: "36px",
+            }}>{capitalizeFirstLetter(animal.animal_type)}</h2>
+            <Button
+              variant="contained"
+              style={{
+                backgroundColor: "#0055D3",
+                color: "white",
+                fontWeight: "600",
+                lineHeight: "36px",
+                boxShadow: "none",
+              }}
+              onClick={handleClose}
+            >
+              <ClearIcon
+                onClick={handleClose}
+                style={{
+                  color: "white",
+                  size: "30px",
+                  fontWeight: "600",
+                  lineHeight: "36px",
+                }} />
+            </Button>
+          </Stack>
+          <Box
+            sx={{
+              padding: "38px 50px 28px 50px",
+            }}>
+            <Stack
+              sx={{
+                fontSize: "18px",
+              }}
+              direction="row"
+              justifyContent="space-between">
+              <Box>
+                <span><b>Kondycja</b>: {animal.condition}</span>
+                <p><b>Zachowanie</b>: <span style={{
+                  fontStyle: "italic",
+                }}>"{animal.behaviour?.replace("<KONIEC>", "")}"</span></p>
+              </Box>
+              <Stack
+                sx={{
+                  textAlign: "right"
+                }}>
+                <span style={{
+                  fontWeight: "600",
+                  fontSize: "20px",
+                  color: "#4F4F4F"
+                }}>Stan</span>
+                <span
+                  style={{
+                    fontWeight: "800",
+                    fontSize: "48px",
+                  }}
+                >{capitalizeFirstLetter(animal.condition)}</span>
+              </Stack>
+            </Stack>
+            <Stack>
+              <p 
+                style={{
+                  fontSize: "20px",
+                  lineHeight: "36px",
+                  fontWeight: "600",
+                }}>
+              {capitalizeFirstLetter(animal.animal_type)} - czy wiesz, że?
+              </p>
+              <span>{funFact}</span>
+            </Stack>
+          </Box>
+        </Stack>
+      </Box>
+
+    </StyledModal >
   );
 }
 
@@ -54,13 +138,14 @@ function GoogleMapComponent() {
 
   const filterContext = React.useContext(FilterContext);
 
-  const [anchorEl, setAnchorEl] = React.useState(null);
-  const handleClick = (event) => {
-    setAnchorEl(event.currentTarget);
+  const [popupOpen, setPopupOpen] = React.useState(false);
+
+  const handleClick = () => {
+    setPopupOpen(true);
   };
 
   const handleClose = () => {
-    setAnchorEl(null);
+    setPopupOpen(false);
   };
 
   const fetchData = async () => {
@@ -93,7 +178,7 @@ function GoogleMapComponent() {
     setMarkers(data.map((marker, index) => {
       const key = `marker-${index}`;
 
-      if(allowedAnimals && allowedAnimals.length != 0 && !allowedAnimals.includes(marker.animal_type)) {
+      if (allowedAnimals && allowedAnimals.length != 0 && !allowedAnimals.includes(marker.animal_type)) {
         return null;
       }
 
@@ -123,7 +208,7 @@ function GoogleMapComponent() {
       width: '100vw',
     }}>
       <AnimalPopover
-        anchorEl={anchorEl}
+        open={popupOpen}
         handleClose={handleClose}
         animal={animal}
       />
@@ -154,11 +239,64 @@ function GoogleMapComponent() {
 }
 
 function App() {
+  const theme = createTheme({
+    typography: {
+      fontFamily: [
+        "Inter",
+        "Roboto",
+      ].join(','),
+    },
+  });
+
   return (
-    <Drawer>
-      <GoogleMapComponent />
-    </Drawer>
+    <ThemeProvider theme={theme}>
+      <Drawer>
+        <GoogleMapComponent />
+      </Drawer>
+    </ThemeProvider>
   )
 }
 
 export default App
+
+
+const StyledModal = styled(Modal)`
+  position: fixed;
+  z-index: 1300;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const style = (theme) => ({
+  width: "60%",
+  borderRadius: '0',
+  padding: '0',
+  backgroundColor: theme.palette.mode === 'dark' ? '#0A1929' : 'white',
+  boxShadow: `0px 2px 24px ${theme.palette.mode === 'dark' ? '#000' : '#383838'}`,
+});
+
+const Backdrop = React.forwardRef((props, ref) => {
+  const { open, className, ...other } = props;
+  return (
+    <div
+      className={clsx({ 'MuiBackdrop-open': open }, className)}
+      ref={ref}
+      {...other}
+    />
+  );
+});
+
+Backdrop.propTypes = {
+  className: PropTypes.string.isRequired,
+  open: PropTypes.bool,
+};
+
+const StyledBackdrop = styled(Backdrop)`
+  z-index: -1;
+  position: fixed;
+  inset: 0;
+  background-color: rgb(0 0 0 / 0.5);
+  -webkit-tap-highlight-color: transparent;
+`;
