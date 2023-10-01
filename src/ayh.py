@@ -8,7 +8,7 @@ from utils import _tts, openai_call
 import os
 
 es = create_es_instance()
-app.secret_key = os.getenv("APP_SECRET")
+# app.secret_key = os.getenv("APP_SECRET")
 
 
 class SessionState(IntEnum):
