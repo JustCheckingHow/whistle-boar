@@ -110,8 +110,8 @@ def main_loop():
         if i not in gathered_already
     ]
 
-    response = openai_call(session["conversation"], "gpt-4")
-    # response = openai_call(session["conversation"], "ft:gpt-3.5-turbo-0613:flathub::84En2q8s")
+    # response = openai_call(session["conversation"], "gpt-4")
+    response = openai_call(session["conversation"], "ft:gpt-3.5-turbo-0613:flathub::84En2q8s")
     session["conversation"].append({"role": "assistant", "content": response})
     app.logger.info("Response from data extraction: %s", response)
 
@@ -119,6 +119,8 @@ def main_loop():
     for row in gathered:
         try:
             key, value = row.split(":")
+            if key == "kondycja zwierzęcia":
+                key = "kondycja zwierzęcia (ranny, zdrowy, martwy)"
             if key.strip() in gathered_info:
                 gathered_info[key.strip()] += f", {value.strip()}"
             else:
