@@ -312,3 +312,5 @@ const StyledBackdrop = styled(Backdrop)`
   background-color: rgb(0 0 0 / 0.5);
   -webkit-tap-highlight-color: transparent;
 `;
+
+export { StyledBackdrop, StyledModal }

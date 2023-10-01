@@ -9,14 +9,14 @@ import Autocomplete from '@mui/material/Autocomplete';
 import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
-import MenuIcon from '@mui/icons-material/Menu';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { TextField } from '@mui/material';
+import { Button, TextField } from '@mui/material';
+import { StyledModal, StyledBackdrop } from "./App";
 
 import Slider from '@mui/material/Slider';
 
 import { FilterContext } from './filterContext';
+import { useFormik } from 'formik';
+import { Dropdown } from '@mui/base';
 
 const drawerWidth = 300;
 
@@ -65,8 +65,6 @@ const DrawerHeader = styled('div')(({ theme }) => ({
 }));
 
 export default function PersistentDrawerLeft(props) {
-  const theme = useTheme();
-
   const [filters, setFilters] = React.useState({});
   const [uniqueAnimals, setUniqueAnimals] = React.useState([]);
   const [currentAnimal, setCurrentAnimal] = React.useState("");
@@ -132,12 +130,17 @@ export default function PersistentDrawerLeft(props) {
 
 const Filters = () => {
   const filters = React.useContext(FilterContext);
+  const [popupOpen, setPopupOpen] = React.useState(false);
 
   const options = filters.uniqueAnimals;
 
   return (
-    <div>
-      <h1>Filtry</h1>
+    <div style={{
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center",
+      height: "100%",
+    }}>
       <Autocomplete
         id="filter-animals"
         options={options}
@@ -149,6 +152,19 @@ const Filters = () => {
             ...filters.filters,
             animals: value,
           });
+        }}
+      />
+      <Button
+        variant="contained"
+        sx={{ margin: "16pt" }}
+        onClick={() => {
+          setPopupOpen(true);
+        }}>Dodaj zwierzę
+      </Button>
+      <AddAnimalForm
+        open={popupOpen}
+        handleClose={() => {
+          setPopupOpen(false);
         }}
       />
     </div>
@@ -203,15 +219,15 @@ const TimeSlider = () => {
     filters.setFilters({
       ...filters.filters,
       time: {
-        min: new Date(value[0]*1000),
-        max: new Date(value[1]*1000),
+        min: new Date(value[0] * 1000),
+        max: new Date(value[1] * 1000),
       },
     });
   }, [value]);
 
   const timestampToDate = (timestamp) => {
     const date = new Date(timestamp * 1000);
-    return `${date.getDate()}.${date.getMonth() + 1}.${date.getFullYear()} ${date.getHours()+1}:00`;
+    return `${date.getDate()}.${date.getMonth() + 1}.${date.getFullYear()} ${date.getHours() + 1}:00`;
   }
 
   return (
@@ -236,29 +252,75 @@ const TimeSlider = () => {
         max={epochMax}
         getAriaValueText={timestampToDate}
         valueLabelFormat={timestampToDate}
-        step={60*60}
+        step={60 * 60}
       />
     </div>
   );
 }
 
-const StoryTimeBox = () => {
-  const filters = React.useContext(FilterContext);
+function AddAnimalForm(props) {
+  const { open, handleClose } = props;
+  const formik = useFormik({
+    initialValues: {
+      species: '',
+      image: '',
+      description: '',
+      condition: '',
+      location: '',
+    }
+  })
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: "10%",
-        right: "5%",
-        width: '25%',
-        backgroundColor: 'white',
-        zIndex: 1000,
-        boxShadow: '0px 0px 10px 0px rgba(0,0,0,0.75)',
-      }}
+    <StyledModal
+      aria-labelledby="unstyled-modal-title"
+      aria-describedby="unstyled-modal-description"
+      open={open}
+      onClose={handleClose}
+      slots={{ backdrop: StyledBackdrop }}
     >
-      {filters.currentAnimal}
-      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam euismod, nisl eget ultricies ultrices, nunc nisl ultrices nunc, quis ultricies nisl nisl sit amet nunc. Sed euismod, nisl eget ultricies ultrices, nunc nisl ultrices nunc, quis ultricies nisl nisl sit amet nunc. Sed euismod, nisl eget ultricies ultrices, nunc nisl ultrices nunc, quis ultricies nisl nisl sit amet nunc. Sed euismod, nisl eget ultricies ultrices, nunc nisl ultrices nunc, quis ultricies nisl nisl sit amet nunc. Sed euismod, nisl eget ultricies ultrices, nunc nisl ultrices nunc, quis ultricies nisl nisl sit amet nunc. Sed euismod, nisl eget ultricies ultrices, nunc nisl ultrices nunc, quis ultricies nisl nisl sit amet nunc. Sed euismod, nisl eget ultricies ultrices, nunc nisl ultrices nunc, quis ultricies nisl nisl sit amet nunc. Sed euismod, nisl eget ultricies ultrices, nunc nisl ultrices nunc, quis ultricies nisl nisl sit amet nunc.
-    </div>
+      <Box sx={style}>
+        <Typography id="unstyled-modal-title" variant="h6" component="h2" sx={{mb:2}}>
+          Dodaj zwierzę
+        </Typography>
+          <form onSubmit={formik.handleSubmit}>
+            <TextField
+              fullWidth
+              id="species"
+              name="species"
+              label="Gatunek"
+              value={formik.values.species}
+              onChange={formik.handleChange}
+              sx={{ mb: 2 }}
+            />
+            <Dropdown
+              fullWidth
+              id="condition"
+              name="condition"
+              label="Stan"
+              value={formik.values.condition}
+              onChange={formik.handleChange}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              id="location"
+              name="location"
+              label="Lokalizacja"
+              value={formik.values.location}
+              onChange={formik.handleChange}
+              sx={{ mb: 2 }}
+            />
+          </form>
+      </Box>
+
+    </StyledModal >
   );
 }
+
+const style = (theme) => ({
+  width: "25%",
+  borderRadius: '0',
+  padding: '16pt 32pt',
+  backgroundColor: theme.palette.mode === 'dark' ? '#0A1929' : 'white',
+  boxShadow: `0px 2px 24px ${theme.palette.mode === 'dark' ? '#000' : '#383838'}`,
+});
