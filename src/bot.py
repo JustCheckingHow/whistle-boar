@@ -18,7 +18,6 @@ logging.basicConfig(
     level=logging.DEBUG)
 
 CONST_SPACE = "\n\n\n\n\n\n\n\n\n\n\n\n"
-# SERVER_API_ADDRS = os.environ['SERVER_API_ADDRS']
 SERVER_API_ADDRS = 'real_chatter:8000'
 builder = Application.builder()
 builder.token(os.environ['TOKEN']).build()

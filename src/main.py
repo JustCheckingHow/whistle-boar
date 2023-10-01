@@ -10,7 +10,6 @@ from app import app
 from models import WildAnimalNotification, engine
 from utils import _tts, openai_call
 
-import ayh
 
 GREETING = "Witaj w systemie GWIZD. Czy spotkało Cię jakieś dzikie zwierzę?"
 SYSTEM = """

@@ -22,7 +22,7 @@ if __name__ == "__main__":
     # initialize the conversation
     text = input("Start conversation [/menu]: ")
     s = requests.Session()
-    r = s.post(f"{HOST}/voice", data={"SpeechResult": text})
+    r = s.post(f"{HOST}/access", data={"SpeechResult": text})
 
     with open("prerecorded.txt", "w") as f:
         f.write(text + "\n")

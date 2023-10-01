@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Iterable, Literal
+from typing import Literal
 
 
 @dataclass
@@ -64,6 +64,8 @@ class BotState:
         return """
         *Witaj w lokalizatorze fauny* \n
         Co zobaczyłeś/zobaczyłaś dzisiaj na szlaku? \n
+        Możesz podzielić się swoją obserwacją telefonicznie \n 
+        pod numerem: 732 070 705
         """
 
     def reset(self):

@@ -9,3 +9,4 @@ python-telegram-bot==20.5
 sqlalchemy==2.0.21
 psycopg2-binary
 flask-cors
+elasticsearch==7.17.9
