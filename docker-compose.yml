@@ -14,15 +14,12 @@ services:
     command: gunicorn -b '0.0.0.0:8000' -w 4 'main:app' -t 180
     env_file:
       - .env
-    networks:
-      - shared_network
     environment:
       - VIRTUAL_HOST=api.gwizd.justcheckinghow.com
       - VIRTUAL_PORT=8000
       - LETSENCRYPT_HOST=api.gwizd.justcheckinghow.com
     container_name: real_chatter
     restart: always
-
 
   telegram_chat:
     build: ./ 
@@ -44,8 +41,6 @@ services:
       - VIRTUAL_HOST=gwizd.justcheckinghow.com
       - VIRTUAL_PORT=5173
       - LETSENCRYPT_HOST=gwizd.justcheckinghow.com
-    networks:
-      - shared_network
     # volumes:
     #   - ./whistleblower:/app
 
@@ -59,11 +54,12 @@ services:
       - postgres_chatter_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
-    networks:
-      - shared_network
 
 volumes:
   postgres_chatter_data:
 
 networks:
-  shared_network:
+  default:
+    # TODO: uncomment in prod
+    # name: access-your-heart_default
+    # external: true
