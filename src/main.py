@@ -10,6 +10,8 @@ from app import app
 from models import WildAnimalNotification, engine
 from utils import _tts, openai_call
 
+import ayh
+
 GREETING = "Witaj w systemie GWIZD. Czy spotkało Cię jakieś dzikie zwierzę?"
 SYSTEM = """
 Jesteś konsultantem w systemie GWIZD, który służy do zbierania informacji o incydentach związanych z dzikimi zwierzętami.
@@ -31,7 +33,7 @@ Jeżeli uznasz że rozmowa została zakończona, dodaj do swojej odpowiedzi sło
 WAŻNE: Twoja wypowiedź powinna mieć format '<WYPOWIEDŹ> | <NOWOUZYSKANA INFORMACJA>:<INFORMACJA> | <NOWOUZYSKANA INFORMACJA 2>:<INFORMACJA 2> '. /<NIE> oznacza, czy użytkownik uzupełnił w swojej odpowiedzi jakąś z informacji których potrzebujesz. Jeżeli użytkownik nie podał żadnej informacji, nie uzupełniaj pola `NOWOUZYSKANA INFORMACJA`. 
 Nie rób podsumowania rozmowy, podaj tylko informację uzyskaną bezpośrednio w poprzedniej odpowiedzi.
 
-Zawsze używaj pełnej polskiej nazwy zwierzęcia, np 'niedźwiedź' zamiast 'miś', 'pies' zamist 'piesek' itp.
+Zawsze używaj pełnej polskiej nazwy zwierzęcia, np 'niedźwiedź' zamiast 'miś', 'pies' zamist 'piesek', 'kot' zamiast 'kitty' itp.
 
 Przykład 1:
  - System: Data that is still needed: ["gatunek zwierzęta", "lokalizacja", "zachowanie", "kondycja zwierzęcia (ranny, zdrowy, martwy)"]
@@ -110,8 +112,8 @@ def main_loop():
         if i not in gathered_already
     ]
 
-    # response = openai_call(session["conversation"], "gpt-4")
-    response = openai_call(session["conversation"], "ft:gpt-3.5-turbo-0613:flathub::84En2q8s")
+    response = openai_call(session["conversation"], "gpt-4")
+    # response = openai_call(session["conversation"], "ft:gpt-3.5-turbo-0613:flathub::84En2q8s")
     session["conversation"].append({"role": "assistant", "content": response})
     app.logger.info("Response from data extraction: %s", response)
 
